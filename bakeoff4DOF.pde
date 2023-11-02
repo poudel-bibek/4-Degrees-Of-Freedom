@@ -21,6 +21,13 @@ float logoY = 500;
 float logoZ = 50f;
 float logoRotation = 0;
 
+// Bibek: Added for the button control panel
+final float BUTTON_WIDTH = 50;
+final float BUTTON_HEIGHT = 50; 
+final float MARGIN = inchToPix(0.15f); 
+final float SPACING = inchToPix(0.05f); 
+
+
 private class Destination
 {
   float x = 0;
@@ -31,9 +38,34 @@ private class Destination
 
 ArrayList<Destination> destinations = new ArrayList<Destination>();
 
-PImage buttonUp, buttonDown, buttonRight, buttonLeft, buttonTurnRight, buttonTurnLeft;
-PImage buttonUpHighlight, buttonDownHighlight, buttonRightHighlight, buttonLeftHighlight, buttonTurnRightHighlight, buttonTurnLeftHighlight;
+PImage buttonUp, buttonDown, buttonRight, buttonLeft, buttonTurnRight, buttonTurnLeft, buttonPlus, buttonMinus;
+PImage buttonUpHighlight, buttonDownHighlight, buttonRightHighlight, buttonLeftHighlight, buttonTurnRightHighlight, buttonTurnLeftHighlight, buttonPlusHighlight, buttonMinusHighlight;
 
+float control1X = 400; //set hardcoded values, because height and width have not been set yet
+float control2X = control1X + 3.5 * BUTTON_WIDTH; // Second control panel
+
+float centerY = 735; // Common Y center for both control panels
+float control1Y = centerY; // Use centerY directly to align the middle of the panel vertically
+
+// Calculate positions for the control buttons based on the panels
+float upX = control1X; // Up button X for the first control panel
+float upY = centerY - BUTTON_HEIGHT - SPACING + 25; // Up button Y
+float downX = control1X; // Down button X for the first control panel
+float downY = centerY + BUTTON_HEIGHT + SPACING - 25; // Down button Y
+float leftX = control1X - BUTTON_WIDTH - SPACING; // Left button X for the first control panel
+float leftY = centerY; // Left button Y
+float rightX = control1X + BUTTON_WIDTH + SPACING; // Right button X for the first control panel
+float rightY = centerY; // Right button Y
+
+float plusX = control2X; // Plus button X
+float plusY = centerY - BUTTON_HEIGHT - SPACING + 25; // Plus button Y
+float minusX = control2X; // Minus button X
+float minusY = centerY + BUTTON_HEIGHT + SPACING - 25; // Minus button Y
+float turnLeftX = control2X - BUTTON_WIDTH - SPACING; // TurnLeft button X
+float turnLeftY = centerY; // TurnLeft button Y
+float turnRightX = control2X + BUTTON_WIDTH + SPACING; // TurnRight button X
+float turnRightY = centerY; // TurnRight button Y
+  
 void setup() {
   size(1000, 800);  
   rectMode(CENTER);
@@ -48,6 +80,8 @@ void setup() {
   buttonLeft = loadImage("./assets/buttons/no_highlight/left.png");
   buttonTurnRight = loadImage("./assets/buttons/no_highlight/turnright.png");
   buttonTurnLeft = loadImage("./assets/buttons/no_highlight/turnleft.png");
+  buttonPlus = loadImage("./assets/buttons/no_highlight/plus.png");
+  buttonMinus = loadImage("./assets/buttons/no_highlight/minus.png");
   
   buttonUpHighlight = loadImage("./assets/buttons/highlight/up.png");
   buttonDownHighlight = loadImage("./assets/buttons/highlight/down.png");
@@ -55,6 +89,8 @@ void setup() {
   buttonLeftHighlight = loadImage("./assets/buttons/highlight/left.png");
   buttonTurnRightHighlight = loadImage("./assets/buttons/highlight/turnright.png");
   buttonTurnLeftHighlight = loadImage("./assets/buttons/highlight/turnleft.png");
+  buttonPlusHighlight = loadImage("./assets/buttons/highlight/plus.png");
+  buttonMinusHighlight = loadImage("./assets/buttons/highlight/minus.png");
   
   //don't change this! 
   border = inchToPix(2f); //padding of 1.0 inches
@@ -127,45 +163,45 @@ void draw() {
 //my example design for control, which is terrible
 void scaffoldControlLogic()
 {
-  //upper left corner, rotate counterclockwise
-  text("CCW", inchToPix(.4f), inchToPix(.4f));
-  if (mousePressed && dist(0, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoRotation--;
+  // Draw 
+  drawControlPanel(buttonUp, buttonDown, buttonLeft, buttonRight, 1);
+  drawControlPanel(buttonPlus, buttonMinus, buttonTurnLeft, buttonTurnRight, 2);
+  
+  // Perform actions based on button presses
+  checkButtonActions();
+}
 
-  //upper right corner, rotate clockwise
-  //text("CW", width-inchToPix(.4f), inchToPix(.4f));
-  //image(buttonTurnRight, inchToPix(.4f), inchToPix(.4f));
-  if (mousePressed && dist(width, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoRotation++;
+// Bibek: Modified Helper function 0. Draw a control panel
+void drawControlPanel(PImage up, PImage down, PImage left, PImage right, int panelNumber) {
+ 
+  
+  if (panelNumber == 1) {
+    // Logic for the first panel (Up, Down, Left, Right)
+    drawButton(up, overButton(upX - BUTTON_WIDTH / 2, upY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonUpHighlight : buttonUp, upX, upY);
+    drawButton(down, overButton(downX - BUTTON_WIDTH / 2, downY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonDownHighlight : buttonDown, downX, downY);
+    drawButton(left, leftX < control1X ? buttonLeftHighlight : buttonLeft, leftX, leftY);
+    drawButton(right, rightX > control1X ? buttonRightHighlight : buttonRight, rightX, rightY);
+    
+  } else if (panelNumber == 2) {
+    // Logic for the second panel (Plus, Minus, TurnLeft, TurnRight)
+    // Adjust this logic as needed for the different layout or behavior
+    drawButton(up, overButton(plusX - BUTTON_WIDTH / 2, plusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonPlusHighlight : buttonPlus, plusX,plusY);
+    drawButton(down, overButton(minusX - BUTTON_WIDTH / 2, minusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonMinusHighlight : buttonMinus, minusX, minusY);
+    drawButton(left, overButton(turnLeftX - BUTTON_WIDTH / 2, turnLeftY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonTurnLeftHighlight : buttonTurnLeft, turnLeftX, turnLeftY);
+    drawButton(right, overButton(turnRightX - BUTTON_WIDTH / 2, turnRightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonTurnRightHighlight : buttonTurnRight, turnRightX, turnRightY);
+  }
+}
 
-  //lower left corner, decrease Z
-  text("-", inchToPix(.4f), height-inchToPix(.4f));
-  if (mousePressed && dist(0, height, mouseX, mouseY)<inchToPix(.8f))
-    logoZ = constrain(logoZ-inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone!
+// Bibek: Helper function 1. Draw a button based on 2 images.
+void drawButton(PImage defaultImg, PImage hoverImg, float x, float y) {
+  PImage imgToShow = overButton(x - BUTTON_WIDTH / 2, y - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? hoverImg : defaultImg;
+  image(imgToShow, x - BUTTON_WIDTH / 2, y - BUTTON_HEIGHT / 2); 
+}
 
-  //lower right corner, increase Z
-  text("+", width-inchToPix(.4f), height-inchToPix(.4f));
-  if (mousePressed && dist(width, height, mouseX, mouseY)<inchToPix(.8f))
-    logoZ = constrain(logoZ+inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone! 
-
-  //left middle, move left
-  //text("left", inchToPix(.4f), height/2);
-  image(buttonLeft, inchToPix(.4f), height - 1.5*inchToPix(.4f) - buttonLeft.height);
-  if (mousePressed && dist(0, height/2, mouseX, mouseY)<inchToPix(.8f))
-    logoX-=inchToPix(.02f);
-
-  //text("right", width-inchToPix(.4f), height/2);
-  image(buttonRight, 8*inchToPix(.4f), height - 1.5*inchToPix(.4f) - buttonLeft.height);
-  if (mousePressed && dist(width, height/2, mouseX, mouseY)<inchToPix(.8f))
-    logoX+=inchToPix(.02f);
-
-  text("up", width/2, inchToPix(.4f));
-  if (mousePressed && dist(width/2, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoY-=inchToPix(.02f);
-
-  text("down", width/2, height-inchToPix(.4f));
-  if (mousePressed && dist(width/2, height, mouseX, mouseY)<inchToPix(.8f))
-    logoY+=inchToPix(.02f);
+// Bibek: Helper function 2. Check if mouse is over button
+boolean overButton(float x, float y, float width, float height) {
+  return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+  
 }
 
 void mousePressed()
@@ -176,6 +212,41 @@ void mousePressed()
     println("time started!");
   }
 }
+
+// Bibek: Helper function 3. Continuously check where the mouse is pressed.
+void checkButtonActions() {
+  
+  // Check if buttons are pressed and perform actions
+  if (mousePressed && (overButton(upX - BUTTON_WIDTH / 2, upY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoY -= inchToPix(.02f);
+  }
+  if (mousePressed &&(overButton(downX - BUTTON_WIDTH / 2, downY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoY += inchToPix(.02f);
+  }
+  if (mousePressed &&(overButton(leftX - BUTTON_WIDTH / 2, leftY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoX -= inchToPix(.02f);
+  }
+  if (mousePressed &&(overButton(rightX - BUTTON_WIDTH / 2, rightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoX += inchToPix(.02f);
+  }
+  
+  // second control panel
+  if (mousePressed &&(overButton(plusX - BUTTON_WIDTH / 2, plusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+
+    logoZ = constrain(logoZ + inchToPix(.02f), .01, inchToPix(4f));
+  }
+  if (mousePressed &&(overButton(minusX - BUTTON_WIDTH / 2, minusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoZ = constrain(logoZ - inchToPix(.02f), .01, inchToPix(4f));
+  }
+  if (mousePressed &&(overButton(turnLeftX - BUTTON_WIDTH / 2, turnLeftY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoRotation--;
+  }
+  if (mousePressed &&(overButton(turnRightX - BUTTON_WIDTH / 2, turnRightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+    logoRotation++;
+  }
+ 
+}
+
 
 void mouseReleased()
 {
