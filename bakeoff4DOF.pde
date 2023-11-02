@@ -31,12 +31,30 @@ private class Destination
 
 ArrayList<Destination> destinations = new ArrayList<Destination>();
 
+PImage buttonUp, buttonDown, buttonRight, buttonLeft, buttonTurnRight, buttonTurnLeft;
+PImage buttonUpHighlight, buttonDownHighlight, buttonRightHighlight, buttonLeftHighlight, buttonTurnRightHighlight, buttonTurnLeftHighlight;
+
 void setup() {
   size(1000, 800);  
   rectMode(CENTER);
   textFont(createFont("Arial", inchToPix(.3f))); //sets the font to Arial that is 0.3" tall
   textAlign(CENTER);
   rectMode(CENTER); //draw rectangles not from upper left, but from the center outwards
+  
+  // Load button images
+  buttonUp = loadImage("./assets/buttons/no_highlight/up.png");
+  buttonDown = loadImage("./assets/buttons/no_highlight/down.png");
+  buttonRight = loadImage("./assets/buttons/no_highlight/right.png");
+  buttonLeft = loadImage("./assets/buttons/no_highlight/left.png");
+  buttonTurnRight = loadImage("./assets/buttons/no_highlight/turnright.png");
+  buttonTurnLeft = loadImage("./assets/buttons/no_highlight/turnleft.png");
+  
+  buttonUpHighlight = loadImage("./assets/buttons/highlight/up.png");
+  buttonDownHighlight = loadImage("./assets/buttons/highlight/down.png");
+  buttonRightHighlight = loadImage("./assets/buttons/highlight/right.png");
+  buttonLeftHighlight = loadImage("./assets/buttons/highlight/left.png");
+  buttonTurnRightHighlight = loadImage("./assets/buttons/highlight/turnright.png");
+  buttonTurnLeftHighlight = loadImage("./assets/buttons/highlight/turnleft.png");
   
   //don't change this! 
   border = inchToPix(2f); //padding of 1.0 inches
@@ -115,7 +133,8 @@ void scaffoldControlLogic()
     logoRotation--;
 
   //upper right corner, rotate clockwise
-  text("CW", width-inchToPix(.4f), inchToPix(.4f));
+  //text("CW", width-inchToPix(.4f), inchToPix(.4f));
+  //image(buttonTurnRight, inchToPix(.4f), inchToPix(.4f));
   if (mousePressed && dist(width, 0, mouseX, mouseY)<inchToPix(.8f))
     logoRotation++;
 
@@ -130,11 +149,13 @@ void scaffoldControlLogic()
     logoZ = constrain(logoZ+inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone! 
 
   //left middle, move left
-  text("left", inchToPix(.4f), height/2);
+  //text("left", inchToPix(.4f), height/2);
+  image(buttonLeft, inchToPix(.4f), height - 1.5*inchToPix(.4f) - buttonLeft.height);
   if (mousePressed && dist(0, height/2, mouseX, mouseY)<inchToPix(.8f))
     logoX-=inchToPix(.02f);
 
-  text("right", width-inchToPix(.4f), height/2);
+  //text("right", width-inchToPix(.4f), height/2);
+  image(buttonRight, 8*inchToPix(.4f), height - 1.5*inchToPix(.4f) - buttonLeft.height);
   if (mousePressed && dist(width, height/2, mouseX, mouseY)<inchToPix(.8f))
     logoX+=inchToPix(.02f);
 

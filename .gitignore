@@ -1,2 +1,14 @@
 .DS_Store
 ./.DS_Store
+
+./assets/.DS_Store
+./assets/buttons/.DS_Store
+
+assets/.DS_Store
+assets/buttons/.DS_Store
+
+./assets/buttons/highlight/.DS_Store
+./assets/buttons/no_highlight/.DS_Store
+
+assets/buttons/highlight/.DS_Store
+assets/buttons/no_highlight/.DS_Store
