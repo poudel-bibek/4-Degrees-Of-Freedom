@@ -27,6 +27,18 @@ final float BUTTON_HEIGHT = 50;
 final float MARGIN = inchToPix(0.15f); 
 final float SPACING = inchToPix(0.05f); 
 
+// Shiv: Added for drag and drop
+boolean isDraggingLogo = false;
+float dragOffsetX = 0;
+float dragOffsetY = 0;
+
+//Shiv: Submit button properties
+float submitButtonX;
+float submitButtonY;
+float submitButtonWidth;
+float submitButtonHeight;
+String submitButtonText = "Submit";
+boolean submitButtonOver = false;
 
 private class Destination
 {
@@ -108,9 +120,13 @@ void setup() {
   }
 
   Collections.shuffle(destinations); // randomize the order of the button; don't change this.
+  
+  //Shiv: Initialize submit button properties
+  submitButtonWidth = inchToPix(1.5f); // 1.5 inches wide
+  submitButtonHeight = inchToPix(0.75f); // 0.75 inches tall
+  submitButtonX = width - border; // Positioned from the right border
+  submitButtonY = height - submitButtonHeight; // Positioned from the bottom border
 }
-
-
 
 void draw() {
 
@@ -158,6 +174,29 @@ void draw() {
   fill(255);
   scaffoldControlLogic(); //you are going to want to replace this!
   text("Trial " + (trialIndex+1) + " of " +trialCount, width/2, inchToPix(.8f));
+  //Shiv: Draw the draggable square (logo)
+  pushMatrix();
+  translate(logoX, logoY);
+  rotate(radians(logoRotation));
+  fill(60, 60, 192); // Color of the square
+  if (isDraggingLogo) {
+    stroke(255, 255, 0); // Highlight color when dragging
+  } else {
+    stroke(0); // Default border color
+  }
+  rect(0, 0, logoZ, logoZ); // Draw the square centered on (logoX, logoY)
+  popMatrix();
+  //Shiv: Submit Button
+  if (submitButtonOver) {
+    fill(100, 255, 100); // Highlight color if mouse is over
+  } else {
+    fill(200); // Default color
+  }
+  noStroke();
+  rect(submitButtonX, submitButtonY, submitButtonWidth, submitButtonHeight, inchToPix(0.1f)); // Slightly rounded corners
+  fill(0);
+  text(submitButtonText, submitButtonX, submitButtonY + inchToPix(0.1f)); // Adjust text position to be centered on button
+  //Shiv End
 }
 
 //my example design for control, which is terrible
@@ -211,8 +250,53 @@ void mousePressed()
     startTime = millis();
     println("time started!");
   }
+  //Shiv: Check if the click is within the bounds of the logo square
+  if (mouseX > logoX - logoZ/2 && mouseX < logoX + logoZ/2 && mouseY > logoY - logoZ/2 && mouseY < logoY + logoZ/2) {
+    isDraggingLogo = true;
+    dragOffsetX = logoX - mouseX;
+    dragOffsetY = logoY - mouseY;
+  }
+  
+  if (mouseX > submitButtonX - submitButtonWidth / 2 &&
+      mouseX < submitButtonX + submitButtonWidth / 2 &&
+      mouseY > submitButtonY - submitButtonHeight / 2 &&
+      mouseY < submitButtonY + submitButtonHeight / 2) {
+    submit();
+  }
 }
 
+//Shiv: Added for Submit Button color
+void mouseMoved() {
+  // Check if the mouse is over the submit button for highlighting
+  if (mouseX > submitButtonX - submitButtonWidth / 2 && mouseX < submitButtonX + submitButtonWidth / 2 && mouseY > submitButtonY - submitButtonHeight / 2 && mouseY < submitButtonY + submitButtonHeight / 2) {
+    submitButtonOver = true;
+  } else {
+    submitButtonOver = false;
+  }
+}
+
+//Shiv: The submit function has the logic that was previously in the mouseReleased function
+void submit() {
+  if (!userDone && !checkForSuccess()) {
+    errorCount++;
+  }
+
+  trialIndex++; // Move on to next trial
+
+  if (trialIndex == trialCount && !userDone) {
+    userDone = true;
+    finishTime = millis();
+  }
+}
+
+//Shiv: Mouse Drag
+void mouseDragged() {
+  // If we are dragging the logo, update its position
+  if (isDraggingLogo) {
+    logoX = mouseX + dragOffsetX;
+    logoY = mouseY + dragOffsetY;
+  }
+}
 // Bibek: Helper function 3. Continuously check where the mouse is pressed.
 void checkButtonActions() {
   
@@ -250,20 +334,8 @@ void checkButtonActions() {
 
 void mouseReleased()
 {
-  //check to see if user clicked middle of screen within 3 inches, which this code uses as a submit button
-  if (dist(width/2, height/2, mouseX, mouseY)<inchToPix(3f))
-  {
-    if (userDone==false && !checkForSuccess())
-      errorCount++;
-
-    trialIndex++; //and move on to next trial
-
-    if (trialIndex==trialCount && userDone==false)
-    {
-      userDone = true;
-      finishTime = millis();
-    }
-  }
+  //Shiv: Stop Dragging
+    isDraggingLogo = false;
 }
 
 //probably shouldn't modify this, but email me if you want to for some good reason.
