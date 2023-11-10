@@ -40,15 +40,11 @@ float submitButtonHeight;
 String submitButtonText = "Submit";
 boolean submitButtonOver = false;
 
-//Shiv: variables for resizing and rotating
-boolean isResizing = false;
-boolean isRotating = false;
-float handleSize = 15;// Size of the visible handle areas
-int activeHandle = -1; // -1 for none, 0-3 for corners, 4-7 for edges
-PVector initialMousePos = new PVector(0, 0); // Initial mouse position for rotation
-float initialLogoZ = 0; // Initial size of the logo when resizing starts
-float initialRotation = 0; // Initial rotation of the logo when rotation starts
-
+//Shiv: Variables for control points
+PVector[] handles = new PVector[8];
+int activeHandle = -1; // Index of the active handle being dragged (-1 when none)
+float handleSize = 10; // Size of each control handle
+float initialMouseAngle; // The initial angle of the mouse relative to the center of the square
 private class Destination
 {
   float x = 0;
@@ -135,6 +131,9 @@ void setup() {
   submitButtonHeight = inchToPix(0.75f); // 0.75 inches tall
   submitButtonX = width - border; // Positioned from the right border
   submitButtonY = height - submitButtonHeight; // Positioned from the bottom border
+  
+  //Shiv: Initialize control handles
+  initializeHandles();
 }
 
 void draw() {
@@ -195,7 +194,6 @@ void draw() {
   }
   rect(0, 0, logoZ, logoZ); // Draw the square centered on (logoX, logoY)
   popMatrix();
-  
   //Shiv: Submit Button
   if (submitButtonOver) {
     fill(100, 255, 100); // Highlight color if mouse is over
@@ -207,16 +205,20 @@ void draw() {
   fill(0);
   text(submitButtonText, submitButtonX, submitButtonY + inchToPix(0.1f)); // Adjust text position to be centered on button
   
-  //Shiv: Draw handles for resizing and rotating
-  handleSize = logoZ * 0.1; // For example, handles are 10% of the square size
-  handleSize = constrain(handleSize, 7, 30); // Constrain size to a reasonable range
-  drawHandles(logoX, logoY, logoZ, logoRotation);
-  pushMatrix();
-  translate(logoX, logoY);
-  rotate(radians(logoRotation));
-  fill(60, 60, 192);
-  rect(0, 0, logoZ, logoZ);
-  popMatrix();
+  // Update the position of the handles
+  initializeHandles();
+  
+  //Shiv: Draw the control handles
+  for (int i = 0; i < handles.length; i++) {
+    if (i % 2 == 0) { // Corner handles
+      fill(255, 0, 0); // Red color for corners (rotation handles)
+    } else {
+      fill(0, 255, 0); // Green color for edges (resizing handles)
+    }
+    noStroke();
+    ellipse(handles[i].x, handles[i].y, handleSize, handleSize);
+  
+  }
   //Shiv End
 }
 
@@ -271,31 +273,28 @@ void mousePressed()
     startTime = millis();
     println("time started!");
   }
-   PVector mouse = new PVector(mouseX, mouseY);
-  activeHandle = getActiveHandle(mouse, logoX, logoY, logoZ, logoRotation);
-  //Shiv: rotate and resize with handles check
-  if (activeHandle != -1) {
-    if (activeHandle < 4) { // Corners
-      isRotating = true;
-      initialRotation = logoRotation;
-      initialMousePos.set(mouse);
-    } else { // Edges
-      isResizing = true;
-      initialMousePos.set(mouse);
-      initialLogoZ = logoZ;
-    }
-  }
   //Shiv: Check if the click is within the bounds of the logo square
-  else if (mouseX > logoX - logoZ/2 && mouseX < logoX + logoZ/2 && mouseY > logoY - logoZ/2 && mouseY < logoY + logoZ/2) {
+  if (mouseX > logoX - logoZ/2 && mouseX < logoX + logoZ/2 && mouseY > logoY - logoZ/2 && mouseY < logoY + logoZ/2) {
     isDraggingLogo = true;
     dragOffsetX = logoX - mouseX;
     dragOffsetY = logoY - mouseY;
-  }  
+  }
+  
   if (mouseX > submitButtonX - submitButtonWidth / 2 &&
       mouseX < submitButtonX + submitButtonWidth / 2 &&
       mouseY > submitButtonY - submitButtonHeight / 2 &&
       mouseY < submitButtonY + submitButtonHeight / 2) {
     submit();
+  }
+  //Shiv: Check if mouse is over any handle
+  for (int i = 0; i < handles.length; i++) {
+    if (dist(mouseX, mouseY, handles[i].x, handles[i].y) < handleSize / 2) {
+      activeHandle = i;
+      if (i % 2 == 0) { // If it's a corner handle
+        initialMouseAngle = atan2(mouseY - logoY, mouseX - logoX) - radians(logoRotation);
+      }
+      break;
+    }
   }
 }
 
@@ -314,7 +313,9 @@ void submit() {
   if (!userDone && !checkForSuccess()) {
     errorCount++;
   }
+
   trialIndex++; // Move on to next trial
+
   if (trialIndex == trialCount && !userDone) {
     userDone = true;
     finishTime = millis();
@@ -323,47 +324,12 @@ void submit() {
 
 //Shiv: Mouse Drag
 void mouseDragged() {
-  //Shiv: for resizing
-  if (isResizing) {
-    PVector currentMouse = new PVector(mouseX, mouseY);
-    PVector center = new PVector(logoX, logoY);
-    // Transforming the mouse coordinates to the square's local coordinate system
-    PVector localMouseStart = PVector.sub(initialMousePos, center);
-    localMouseStart.rotate(-radians(logoRotation));
-    PVector localMouseCurrent = PVector.sub(currentMouse, center);
-    localMouseCurrent.rotate(-radians(logoRotation));
-    // Calculate the change in size based on localMouseCurrent and localMouseStart
-    float sizeChange;
-    if (activeHandle == 4) { // Top
-      sizeChange = localMouseStart.y - localMouseCurrent.y;
-    } else if (activeHandle == 5) { // Bottom
-      sizeChange = localMouseCurrent.y - localMouseStart.y;
-    }else if (activeHandle == 6) { // Left
-      sizeChange = localMouseStart.x - localMouseCurrent.x;
-    }else if (activeHandle == 7) { // Right
-      sizeChange = localMouseCurrent.x - localMouseStart.x;
-    } else {
-      sizeChange = 0; // Default case if no valid handle is selected
-    }
-    logoZ = initialLogoZ + sizeChange * 2; // Adjust multiplier if needed
-    logoZ = max(logoZ, 10); // Prevent the square from disappearing
-  }
-  //Shiv: For rotate
-  else if (isRotating) {
-    PVector currentMousePos = new PVector(mouseX, mouseY);
-    PVector center = new PVector(logoX, logoY);
-    PVector startVec = PVector.sub(initialMousePos, center);
-    PVector currentVec = PVector.sub(currentMousePos, center);
-    float angle = PVector.angleBetween(startVec, currentVec);
-    logoRotation = initialRotation + degrees(angle) * (startVec.cross(currentVec).z > 0 ? 1 : -1);
-  } 
-  //Shiv: Drag and update position
-  else if (isDraggingLogo) {
+  // If we are dragging the logo, update its position
+  if (isDraggingLogo) {
     logoX = mouseX + dragOffsetX;
     logoY = mouseY + dragOffsetY;
   }
 }
-
 // Bibek: Helper function 3. Continuously check where the mouse is pressed.
 void checkButtonActions() {
   
@@ -379,9 +345,11 @@ void checkButtonActions() {
   }
   if (mousePressed &&(overButton(rightX - BUTTON_WIDTH / 2, rightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
     logoX += inchToPix(.02f);
-  }  
+  }
+  
   // second control panel
   if (mousePressed &&(overButton(plusX - BUTTON_WIDTH / 2, plusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
+
     logoZ = constrain(logoZ + inchToPix(.02f), .01, inchToPix(4f));
   }
   if (mousePressed &&(overButton(minusX - BUTTON_WIDTH / 2, minusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
@@ -392,17 +360,26 @@ void checkButtonActions() {
   }
   if (mousePressed &&(overButton(turnRightX - BUTTON_WIDTH / 2, turnRightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
     logoRotation++;
-  } 
+  }
+ // Shiv: rotate
+ 
+ if (activeHandle != -1) {
+    if (activeHandle % 2 == 0) { // Corner handles for rotation
+      float currentMouseAngle = atan2(mouseY - logoY, mouseX - logoX);
+      logoRotation = degrees(currentMouseAngle - initialMouseAngle);
+    } else {
+      // Edge handles for resizing (you can add logic here for uniform resizing)
+    }
+  }
 }
 
 
 void mouseReleased()
 {
-  //Shiv: Stop Dragging+rotate+resize
+  //Shiv: Stop Dragging
     isDraggingLogo = false;
-    isResizing = false;
-    isRotating = false;
-    activeHandle = -1;
+      activeHandle = -1; // No handle is active
+
 }
 
 //probably shouldn't modify this, but email me if you want to for some good reason.
@@ -432,45 +409,30 @@ double calculateDifferenceBetweenAngles(float a1, float a2)
     return diff;
 }
 
+//Shiv : Handles
+
+void initializeHandles() {
+  float angle = radians(logoRotation);
+  float cosA = cos(angle);
+  float sinA = sin(angle);
+  float halfSize = logoZ / 2;
+  handles[0] = new PVector(cosA * -halfSize + sinA * halfSize, cosA * halfSize + sinA * halfSize); // Top-right
+  handles[1] = new PVector(0, sinA * -halfSize); // Top
+  handles[2] = new PVector(cosA * halfSize + sinA * halfSize, sinA * -halfSize - cosA * halfSize); // Top-left
+  handles[3] = new PVector(cosA * halfSize, 0); // Right
+  handles[4] = new PVector(cosA * halfSize - sinA * halfSize, sinA * halfSize - cosA * halfSize); // Bottom-left
+  handles[5] = new PVector(0, sinA * halfSize); // Bottom
+  handles[6] = new PVector(cosA * -halfSize - sinA * halfSize, sinA * -halfSize + cosA * halfSize); // Bottom-right
+  handles[7] = new PVector(cosA * -halfSize, 0); // Left
+
+  // Translate all handles to the square's position
+  for (int i = 0; i < handles.length; i++) {
+    handles[i].add(logoX, logoY);
+  }
+}
+
 //utility function to convert inches into pixels based on screen PPI
 float inchToPix(float inch)
 {
   return inch*screenPPI;
-}
-
-// Shiv: to draw handles
-void drawHandles(float x, float y, float size, float rotation) {
-  pushMatrix();
-  translate(x, y);
-  rotate(radians(rotation));
-  fill(255, 0, 0); // Red color for handles
-  ellipse(-size/2, -size/2, handleSize, handleSize); // Top-left
-  ellipse(size/2, -size/2, handleSize, handleSize); // Top-right
-  ellipse(-size/2, size/2, handleSize, handleSize); // Bottom-left
-  ellipse(size/2, size/2, handleSize, handleSize); // Bottom-right
-  ellipse(0, -size/2, handleSize, handleSize); // Top
-  ellipse(0, size/2, handleSize, handleSize); // Bottom
-  ellipse(-size/2, 0, handleSize, handleSize); // Left
-  ellipse(size/2, 0, handleSize, handleSize); // Right
-  popMatrix();
-}
-
-//Shiv: Active Handle
-int getActiveHandle(PVector mouse, float x, float y, float size, float rotation) {
-  pushMatrix();
-  translate(x, y);
-  rotate(radians(-rotation));
-  PVector localMouse = new PVector(mouse.x, mouse.y);
-  localMouse.sub(new PVector(x, y));
-  localMouse.rotate(radians(-rotation));
-  if (dist(localMouse.x, localMouse.y, -size/2, -size/2) < handleSize / 2) return 0; // Top-left
-  if (dist(localMouse.x, localMouse.y, size/2, -size/2) < handleSize / 2) return 1; // Top-right
-  if (dist(localMouse.x, localMouse.y, -size/2, size/2) < handleSize / 2) return 2; // Bottom-left
-  if (dist(localMouse.x, localMouse.y, size/2, size/2) < handleSize / 2) return 3; // Bottom-right
-  if (dist(localMouse.x, localMouse.y, 0, -size/2) < handleSize / 2) return 4; // Top
-  if (dist(localMouse.x, localMouse.y, 0, size/2) < handleSize / 2) return 5; // Bottom
-  if (dist(localMouse.x, localMouse.y, -size/2, 0) < handleSize / 2) return 6; // Left
-  if (dist(localMouse.x, localMouse.y, size/2, 0) < handleSize / 2) return 7; // Right
-  popMatrix();
-  return -1;
 }
