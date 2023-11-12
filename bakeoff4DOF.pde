@@ -204,10 +204,15 @@ void draw() {
   }
   noStroke();
   rect(submitButtonX, submitButtonY, submitButtonWidth, submitButtonHeight, inchToPix(0.1f)); // Slightly rounded corners
+  textAlign(CENTER, CENTER);
   fill(0);
   text(submitButtonText, submitButtonX, submitButtonY + inchToPix(0.1f)); // Adjust text position to be centered on button
   
   //Shiv: Draw handles for resizing and rotating
+  
+  // Transform mouse coordinates to square's local coordinate system
+  PVector transformedMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
+
   handleSize = logoZ * 0.1; // For example, handles are 10% of the square size
   handleSize = constrain(handleSize, 7, 30); // Constrain size to a reasonable range
   drawHandles(logoX, logoY, logoZ, logoRotation);
@@ -217,6 +222,11 @@ void draw() {
   fill(60, 60, 192);
   rect(0, 0, logoZ, logoZ);
   popMatrix();
+  // Set cursor based on mouse position
+  updateCursor(transformedMouse);
+  
+  // Display success status
+  displayMatchStatus();
   //Shiv End
 }
 
@@ -271,17 +281,20 @@ void mousePressed()
     startTime = millis();
     println("time started!");
   }
-   PVector mouse = new PVector(mouseX, mouseY);
-  activeHandle = getActiveHandle(mouse, logoX, logoY, logoZ, logoRotation);
+   // Transform mouse coordinates to square's local coordinate system
+    PVector transformedMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
+
+    // Determine which handle (if any) is active
+    activeHandle = getActiveHandle(transformedMouse, logoZ);
   //Shiv: rotate and resize with handles check
   if (activeHandle != -1) {
     if (activeHandle < 4) { // Corners
       isRotating = true;
       initialRotation = logoRotation;
-      initialMousePos.set(mouse);
+      initialMousePos.set(transformedMouse);
     } else { // Edges
       isResizing = true;
-      initialMousePos.set(mouse);
+      initialMousePos.set(transformedMouse);
       initialLogoZ = logoZ;
     }
   }
@@ -325,27 +338,36 @@ void submit() {
 void mouseDragged() {
   //Shiv: for resizing
   if (isResizing) {
-    PVector currentMouse = new PVector(mouseX, mouseY);
-    PVector center = new PVector(logoX, logoY);
-    // Transforming the mouse coordinates to the square's local coordinate system
-    PVector localMouseStart = PVector.sub(initialMousePos, center);
-    localMouseStart.rotate(-radians(logoRotation));
-    PVector localMouseCurrent = PVector.sub(currentMouse, center);
-    localMouseCurrent.rotate(-radians(logoRotation));
-    // Calculate the change in size based on localMouseCurrent and localMouseStart
+    // Transform current mouse coordinates to square's local coordinate system
+    PVector transformedCurrentMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
+    // Calculate the change in size based on transformed coordinates
     float sizeChange;
-    if (activeHandle == 4) { // Top
-      sizeChange = localMouseStart.y - localMouseCurrent.y;
-    } else if (activeHandle == 5) { // Bottom
-      sizeChange = localMouseCurrent.y - localMouseStart.y;
-    }else if (activeHandle == 6) { // Left
-      sizeChange = localMouseStart.x - localMouseCurrent.x;
-    }else if (activeHandle == 7) { // Right
-      sizeChange = localMouseCurrent.x - localMouseStart.x;
-    } else {
-      sizeChange = 0; // Default case if no valid handle is selected
+    switch (activeHandle) {
+      case 4: // Top
+        sizeChange = initialMousePos.y - transformedCurrentMouse.y;
+        break;
+      case 5: // Bottom
+        sizeChange = transformedCurrentMouse.y - initialMousePos.y;
+        break;
+      case 6: // Left
+        sizeChange = initialMousePos.x - transformedCurrentMouse.x;
+        break;
+      case 7: // Right
+        sizeChange = transformedCurrentMouse.x - initialMousePos.x;
+        break;
+      default:
+        sizeChange = 0; // Default case if no valid handle is selected
+        break;
     }
-    logoZ = initialLogoZ + sizeChange * 2; // Adjust multiplier if needed
+
+    if (activeHandle == 6 || activeHandle == 7) { // Left or Right handles
+        // Adjust width (if necessary, depending on how you want to handle horizontal resizing)
+        logoZ = initialLogoZ + sizeChange;
+    } else {
+        // Adjust height
+        logoZ = initialLogoZ + sizeChange * 2;
+    }
+
     logoZ = max(logoZ, 10); // Prevent the square from disappearing
   }
   //Shiv: For rotate
@@ -456,21 +478,57 @@ void drawHandles(float x, float y, float size, float rotation) {
 }
 
 //Shiv: Active Handle
-int getActiveHandle(PVector mouse, float x, float y, float size, float rotation) {
-  pushMatrix();
-  translate(x, y);
-  rotate(radians(-rotation));
-  PVector localMouse = new PVector(mouse.x, mouse.y);
-  localMouse.sub(new PVector(x, y));
-  localMouse.rotate(radians(-rotation));
-  if (dist(localMouse.x, localMouse.y, -size/2, -size/2) < handleSize / 2) return 0; // Top-left
-  if (dist(localMouse.x, localMouse.y, size/2, -size/2) < handleSize / 2) return 1; // Top-right
-  if (dist(localMouse.x, localMouse.y, -size/2, size/2) < handleSize / 2) return 2; // Bottom-left
-  if (dist(localMouse.x, localMouse.y, size/2, size/2) < handleSize / 2) return 3; // Bottom-right
-  if (dist(localMouse.x, localMouse.y, 0, -size/2) < handleSize / 2) return 4; // Top
-  if (dist(localMouse.x, localMouse.y, 0, size/2) < handleSize / 2) return 5; // Bottom
-  if (dist(localMouse.x, localMouse.y, -size/2, 0) < handleSize / 2) return 6; // Left
-  if (dist(localMouse.x, localMouse.y, size/2, 0) < handleSize / 2) return 7; // Right
-  popMatrix();
-  return -1;
+int getActiveHandle(PVector mouse, float size) {
+    // Check if mouse is over any corner handle for rotation
+    if (dist(mouse.x, mouse.y, -size/2, -size/2) < handleSize / 2) return 0; // Top-left
+    if (dist(mouse.x, mouse.y, size/2, -size/2) < handleSize / 2) return 1; // Top-right
+    if (dist(mouse.x, mouse.y, -size/2, size/2) < handleSize / 2) return 2; // Bottom-left
+    if (dist(mouse.x, mouse.y, size/2, size/2) < handleSize / 2) return 3; // Bottom-right
+
+    // Check if mouse is over any edge handle for resizing
+    if (dist(mouse.x, mouse.y, 0, -size/2) < handleSize / 2) return 4; // Top
+    if (dist(mouse.x, mouse.y, 0, size/2) < handleSize / 2) return 5; // Bottom
+    if (dist(mouse.x, mouse.y, -size/2, 0) < handleSize / 2) return 6; // Left
+    if (dist(mouse.x, mouse.y, size/2, 0) < handleSize / 2) return 7; // Right
+
+    return -1; // No active handle
+}
+
+PVector getTransformedMouse(float mouseX, float mouseY, float x, float y, float rotation) {
+    PVector mouse = new PVector(mouseX, mouseY);
+    PVector center = new PVector(x, y);
+    mouse.sub(center);
+    mouse.rotate(-radians(rotation));
+    return mouse;
+}
+
+void updateCursor(PVector transformedMouse) {
+    int handle = getActiveHandle(transformedMouse, logoZ);
+
+    if (isMouseOverSquare(transformedMouse, logoZ)) {
+        cursor(MOVE);
+    } else if (handle >= 0 && handle < 4) {
+        cursor(HAND); // Rotate cursor (hand cursor as a placeholder)
+    } else if (handle >= 4) {
+        cursor(CROSS); // Resize cursor
+    } else {
+        cursor(ARROW);
+    }
+}
+  
+boolean isMouseOverSquare(PVector mouse, float size) {
+    return mouse.x > -size / 2 && mouse.x < size / 2 && mouse.y > -size / 2 && mouse.y < size / 2;
+}
+
+void displayMatchStatus() {
+    boolean isSuccess = checkForSuccess();
+    String statusText = isSuccess ? "True" : "False";
+    if (isSuccess) {
+        fill(0, 255, 0); // Green text for "True"
+    } else {
+        fill(255, 0, 0); // Red text for "False"
+    }
+    textAlign(RIGHT, TOP);
+    textSize(20);
+    text("Match: " + statusText, width - 10, 10); // Display in the top right corner
 }
