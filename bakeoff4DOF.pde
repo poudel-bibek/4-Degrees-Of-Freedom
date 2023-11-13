@@ -310,6 +310,12 @@ void mousePressed()
       mouseY < submitButtonY + submitButtonHeight / 2) {
     submit();
   }
+  if (isRotating) {
+        initialRotation = logoRotation;
+        PVector center = new PVector(logoX, logoY);
+        initialMousePos = new PVector(mouseX, mouseY).sub(center);
+        initialMousePos.rotate(-radians(logoRotation));
+    }
 }
 
 //Shiv: Added for Submit Button color
@@ -336,10 +342,10 @@ void submit() {
 
 //Shiv: Mouse Drag
 void mouseDragged() {
+  PVector transformedCurrentMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
   //Shiv: for resizing
   if (isResizing) {
     // Transform current mouse coordinates to square's local coordinate system
-    PVector transformedCurrentMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
     // Calculate the change in size based on transformed coordinates
     float sizeChange;
     switch (activeHandle) {
@@ -359,7 +365,6 @@ void mouseDragged() {
         sizeChange = 0; // Default case if no valid handle is selected
         break;
     }
-
     if (activeHandle == 6 || activeHandle == 7) { // Left or Right handles
         // Adjust width (if necessary, depending on how you want to handle horizontal resizing)
         logoZ = initialLogoZ + sizeChange;
@@ -367,18 +372,24 @@ void mouseDragged() {
         // Adjust height
         logoZ = initialLogoZ + sizeChange * 2;
     }
-
     logoZ = max(logoZ, 10); // Prevent the square from disappearing
   }
   //Shiv: For rotate
   else if (isRotating) {
-    PVector currentMousePos = new PVector(mouseX, mouseY);
     PVector center = new PVector(logoX, logoY);
-    PVector startVec = PVector.sub(initialMousePos, center);
-    PVector currentVec = PVector.sub(currentMousePos, center);
-    float angle = PVector.angleBetween(startVec, currentVec);
-    logoRotation = initialRotation + degrees(angle) * (startVec.cross(currentVec).z > 0 ? 1 : -1);
-  } 
+    PVector prevVec = new PVector(pmouseX, pmouseY).sub(center);
+    PVector currentVec = new PVector(mouseX, mouseY).sub(center);
+    // Calculate the angle between the previous and current vectors
+    float angleDelta = atan2(currentVec.y, currentVec.x) - atan2(prevVec.y, prevVec.x);
+    // Normalize the angle delta to avoid jumps
+    if (angleDelta > PI) {
+        angleDelta -= TWO_PI;
+    } else if (angleDelta < -PI) {
+        angleDelta += TWO_PI;
+    }
+    // Apply the angle delta to the rotation
+    logoRotation += degrees(angleDelta);
+}
   //Shiv: Drag and update position
   else if (isDraggingLogo) {
     logoX = mouseX + dragOffsetX;
