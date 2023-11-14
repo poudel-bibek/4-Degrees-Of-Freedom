@@ -13,7 +13,7 @@ int finishTime = 0; //records the time of the final click
 boolean userDone = false; //is the user done
 
 final int screenPPI = 72; //what is the DPI of the screen you are using
-//you can test this by drawing a 72x72 pixel rectangle in code, and then confirming with a ruler it is 1x1 inch. 
+//you can test this by drawing a 72x72 pixel rectangle in code, and then confirming with a ruler it is 1x1 inch.
 
 //These variables are for my example design. Your input code should modify/replace these!
 float logoX = 500;
@@ -23,9 +23,9 @@ float logoRotation = 0;
 
 // Bibek: Added for the button control panel
 final float BUTTON_WIDTH = 50;
-final float BUTTON_HEIGHT = 50; 
-final float MARGIN = inchToPix(0.15f); 
-final float SPACING = inchToPix(0.05f); 
+final float BUTTON_HEIGHT = 50;
+final float MARGIN = inchToPix(0.15f);
+final float SPACING = inchToPix(0.05f);
 
 // Shiv: Added for drag and drop
 boolean isDraggingLogo = false;
@@ -86,14 +86,14 @@ float turnLeftX = control2X - BUTTON_WIDTH - SPACING; // TurnLeft button X
 float turnLeftY = centerY; // TurnLeft button Y
 float turnRightX = control2X + BUTTON_WIDTH + SPACING; // TurnRight button X
 float turnRightY = centerY; // TurnRight button Y
-  
+
 void setup() {
-  size(1000, 800);  
+  size(1000, 800);
   rectMode(CENTER);
   textFont(createFont("Arial", inchToPix(.3f))); //sets the font to Arial that is 0.3" tall
   textAlign(CENTER);
   rectMode(CENTER); //draw rectangles not from upper left, but from the center outwards
-  
+
   // Load button images
   buttonUp = loadImage("./assets/buttons/no_highlight/up.png");
   buttonDown = loadImage("./assets/buttons/no_highlight/down.png");
@@ -103,7 +103,7 @@ void setup() {
   buttonTurnLeft = loadImage("./assets/buttons/no_highlight/turnleft.png");
   buttonPlus = loadImage("./assets/buttons/no_highlight/plus.png");
   buttonMinus = loadImage("./assets/buttons/no_highlight/minus.png");
-  
+
   buttonUpHighlight = loadImage("./assets/buttons/highlight/up.png");
   buttonDownHighlight = loadImage("./assets/buttons/highlight/down.png");
   buttonRightHighlight = loadImage("./assets/buttons/highlight/right.png");
@@ -112,24 +112,24 @@ void setup() {
   buttonTurnLeftHighlight = loadImage("./assets/buttons/highlight/turnleft.png");
   buttonPlusHighlight = loadImage("./assets/buttons/highlight/plus.png");
   buttonMinusHighlight = loadImage("./assets/buttons/highlight/minus.png");
-  
-  //don't change this! 
+
+  //don't change this!
   border = inchToPix(2f); //padding of 1.0 inches
 
-  for (int i=0; i<trialCount; i++) //don't change this! 
+  for (int i=0; i<trialCount; i++) //don't change this!
   {
     Destination d = new Destination();
     d.x = random(border, width-border); //set a random x with some padding
     d.y = random(border, height-border); //set a random y with some padding
     d.rotation = random(0, 360); //random rotation between 0 and 360
     int j = (int)random(20);
-    d.z = ((j%12)+1)*inchToPix(.25f); //increasing size from .25 up to 3.0" 
+    d.z = ((j%12)+1)*inchToPix(.25f); //increasing size from .25 up to 3.0"
     destinations.add(d);
     println("created target with " + d.x + "," + d.y + "," + d.rotation + "," + d.z);
   }
 
   Collections.shuffle(destinations); // randomize the order of the button; don't change this.
-  
+
   //Shiv: Initialize submit button properties
   submitButtonWidth = inchToPix(1.5f); // 1.5 inches wide
   submitButtonHeight = inchToPix(0.75f); // 0.75 inches tall
@@ -195,7 +195,7 @@ void draw() {
   }
   rect(0, 0, logoZ, logoZ); // Draw the square centered on (logoX, logoY)
   popMatrix();
-  
+
   //Shiv: Submit Button
   if (submitButtonOver) {
     fill(100, 255, 100); // Highlight color if mouse is over
@@ -204,12 +204,12 @@ void draw() {
   }
   noStroke();
   rect(submitButtonX, submitButtonY, submitButtonWidth, submitButtonHeight, inchToPix(0.1f)); // Slightly rounded corners
-  textAlign(CENTER, CENTER);
+  textAlign(CENTER, BOTTOM);
   fill(0);
   text(submitButtonText, submitButtonX, submitButtonY + inchToPix(0.1f)); // Adjust text position to be centered on button
-  
+
   //Shiv: Draw handles for resizing and rotating
-  
+
   // Transform mouse coordinates to square's local coordinate system
   PVector transformedMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
 
@@ -224,38 +224,39 @@ void draw() {
   popMatrix();
   // Set cursor based on mouse position
   updateCursor(transformedMouse);
-  
+
   // Display success status
   displayMatchStatus();
+  // Draw the legend
+  drawLegend();
   //Shiv End
 }
 
 //my example design for control, which is terrible
 void scaffoldControlLogic()
 {
-  // Draw 
+  // Draw
   drawControlPanel(buttonUp, buttonDown, buttonLeft, buttonRight, 1);
   drawControlPanel(buttonPlus, buttonMinus, buttonTurnLeft, buttonTurnRight, 2);
-  
+
   // Perform actions based on button presses
   checkButtonActions();
 }
 
 // Bibek: Modified Helper function 0. Draw a control panel
 void drawControlPanel(PImage up, PImage down, PImage left, PImage right, int panelNumber) {
- 
-  
+
+
   if (panelNumber == 1) {
     // Logic for the first panel (Up, Down, Left, Right)
     drawButton(up, overButton(upX - BUTTON_WIDTH / 2, upY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonUpHighlight : buttonUp, upX, upY);
     drawButton(down, overButton(downX - BUTTON_WIDTH / 2, downY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonDownHighlight : buttonDown, downX, downY);
     drawButton(left, leftX < control1X ? buttonLeftHighlight : buttonLeft, leftX, leftY);
     drawButton(right, rightX > control1X ? buttonRightHighlight : buttonRight, rightX, rightY);
-    
   } else if (panelNumber == 2) {
     // Logic for the second panel (Plus, Minus, TurnLeft, TurnRight)
     // Adjust this logic as needed for the different layout or behavior
-    drawButton(up, overButton(plusX - BUTTON_WIDTH / 2, plusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonPlusHighlight : buttonPlus, plusX,plusY);
+    drawButton(up, overButton(plusX - BUTTON_WIDTH / 2, plusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonPlusHighlight : buttonPlus, plusX, plusY);
     drawButton(down, overButton(minusX - BUTTON_WIDTH / 2, minusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonMinusHighlight : buttonMinus, minusX, minusY);
     drawButton(left, overButton(turnLeftX - BUTTON_WIDTH / 2, turnLeftY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonTurnLeftHighlight : buttonTurnLeft, turnLeftX, turnLeftY);
     drawButton(right, overButton(turnRightX - BUTTON_WIDTH / 2, turnRightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? buttonTurnRightHighlight : buttonTurnRight, turnRightX, turnRightY);
@@ -265,13 +266,12 @@ void drawControlPanel(PImage up, PImage down, PImage left, PImage right, int pan
 // Bibek: Helper function 1. Draw a button based on 2 images.
 void drawButton(PImage defaultImg, PImage hoverImg, float x, float y) {
   PImage imgToShow = overButton(x - BUTTON_WIDTH / 2, y - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT) ? hoverImg : defaultImg;
-  image(imgToShow, x - BUTTON_WIDTH / 2, y - BUTTON_HEIGHT / 2); 
+  image(imgToShow, x - BUTTON_WIDTH / 2, y - BUTTON_HEIGHT / 2);
 }
 
 // Bibek: Helper function 2. Check if mouse is over button
 boolean overButton(float x, float y, float width, float height) {
   return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
-  
 }
 
 void mousePressed()
@@ -281,11 +281,11 @@ void mousePressed()
     startTime = millis();
     println("time started!");
   }
-   // Transform mouse coordinates to square's local coordinate system
-    PVector transformedMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
+  // Transform mouse coordinates to square's local coordinate system
+  PVector transformedMouse = getTransformedMouse(mouseX, mouseY, logoX, logoY, logoRotation);
 
-    // Determine which handle (if any) is active
-    activeHandle = getActiveHandle(transformedMouse, logoZ);
+  // Determine which handle (if any) is active
+  activeHandle = getActiveHandle(transformedMouse, logoZ);
   //Shiv: rotate and resize with handles check
   if (activeHandle != -1) {
     if (activeHandle < 4) { // Corners
@@ -303,19 +303,19 @@ void mousePressed()
     isDraggingLogo = true;
     dragOffsetX = logoX - mouseX;
     dragOffsetY = logoY - mouseY;
-  }  
+  }
   if (mouseX > submitButtonX - submitButtonWidth / 2 &&
-      mouseX < submitButtonX + submitButtonWidth / 2 &&
-      mouseY > submitButtonY - submitButtonHeight / 2 &&
-      mouseY < submitButtonY + submitButtonHeight / 2) {
+    mouseX < submitButtonX + submitButtonWidth / 2 &&
+    mouseY > submitButtonY - submitButtonHeight / 2 &&
+    mouseY < submitButtonY + submitButtonHeight / 2) {
     submit();
   }
   if (isRotating) {
-        initialRotation = logoRotation;
-        PVector center = new PVector(logoX, logoY);
-        initialMousePos = new PVector(mouseX, mouseY).sub(center);
-        initialMousePos.rotate(-radians(logoRotation));
-    }
+    initialRotation = logoRotation;
+    PVector center = new PVector(logoX, logoY);
+    initialMousePos = new PVector(mouseX, mouseY).sub(center);
+    initialMousePos.rotate(-radians(logoRotation));
+  }
 }
 
 //Shiv: Added for Submit Button color
@@ -349,28 +349,28 @@ void mouseDragged() {
     // Calculate the change in size based on transformed coordinates
     float sizeChange;
     switch (activeHandle) {
-      case 4: // Top
-        sizeChange = initialMousePos.y - transformedCurrentMouse.y;
-        break;
-      case 5: // Bottom
-        sizeChange = transformedCurrentMouse.y - initialMousePos.y;
-        break;
-      case 6: // Left
-        sizeChange = initialMousePos.x - transformedCurrentMouse.x;
-        break;
-      case 7: // Right
-        sizeChange = transformedCurrentMouse.x - initialMousePos.x;
-        break;
-      default:
-        sizeChange = 0; // Default case if no valid handle is selected
-        break;
+    case 4: // Top
+      sizeChange = initialMousePos.y - transformedCurrentMouse.y;
+      break;
+    case 5: // Bottom
+      sizeChange = transformedCurrentMouse.y - initialMousePos.y;
+      break;
+    case 6: // Left
+      sizeChange = initialMousePos.x - transformedCurrentMouse.x;
+      break;
+    case 7: // Right
+      sizeChange = transformedCurrentMouse.x - initialMousePos.x;
+      break;
+    default:
+      sizeChange = 0; // Default case if no valid handle is selected
+      break;
     }
     if (activeHandle == 6 || activeHandle == 7) { // Left or Right handles
-        // Adjust width (if necessary, depending on how you want to handle horizontal resizing)
-        logoZ = initialLogoZ + sizeChange;
+      // Adjust width (if necessary, depending on how you want to handle horizontal resizing)
+      logoZ = initialLogoZ + sizeChange;
     } else {
-        // Adjust height
-        logoZ = initialLogoZ + sizeChange * 2;
+      // Adjust height
+      logoZ = initialLogoZ + sizeChange * 2;
     }
     logoZ = max(logoZ, 10); // Prevent the square from disappearing
   }
@@ -383,13 +383,13 @@ void mouseDragged() {
     float angleDelta = atan2(currentVec.y, currentVec.x) - atan2(prevVec.y, prevVec.x);
     // Normalize the angle delta to avoid jumps
     if (angleDelta > PI) {
-        angleDelta -= TWO_PI;
+      angleDelta -= TWO_PI;
     } else if (angleDelta < -PI) {
-        angleDelta += TWO_PI;
+      angleDelta += TWO_PI;
     }
     // Apply the angle delta to the rotation
     logoRotation += degrees(angleDelta);
-}
+  }
   //Shiv: Drag and update position
   else if (isDraggingLogo) {
     logoX = mouseX + dragOffsetX;
@@ -399,7 +399,7 @@ void mouseDragged() {
 
 // Bibek: Helper function 3. Continuously check where the mouse is pressed.
 void checkButtonActions() {
-  
+
   // Check if buttons are pressed and perform actions
   if (mousePressed && (overButton(upX - BUTTON_WIDTH / 2, upY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
     logoY -= inchToPix(.02f);
@@ -412,7 +412,7 @@ void checkButtonActions() {
   }
   if (mousePressed &&(overButton(rightX - BUTTON_WIDTH / 2, rightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
     logoX += inchToPix(.02f);
-  }  
+  }
   // second control panel
   if (mousePressed &&(overButton(plusX - BUTTON_WIDTH / 2, plusY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
     logoZ = constrain(logoZ + inchToPix(.02f), .01, inchToPix(4f));
@@ -425,17 +425,17 @@ void checkButtonActions() {
   }
   if (mousePressed &&(overButton(turnRightX - BUTTON_WIDTH / 2, turnRightY - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT))) {
     logoRotation++;
-  } 
+  }
 }
 
 
 void mouseReleased()
 {
   //Shiv: Stop Dragging+rotate+resize
-    isDraggingLogo = false;
-    isResizing = false;
-    isRotating = false;
-    activeHandle = -1;
+  isDraggingLogo = false;
+  isResizing = false;
+  isRotating = false;
+  activeHandle = -1;
 }
 
 //probably shouldn't modify this, but email me if you want to for some good reason.
@@ -476,11 +476,12 @@ void drawHandles(float x, float y, float size, float rotation) {
   pushMatrix();
   translate(x, y);
   rotate(radians(rotation));
-  fill(255, 0, 0); // Red color for handles
+  fill(255, 255, 0); // Red color for handles
   ellipse(-size/2, -size/2, handleSize, handleSize); // Top-left
   ellipse(size/2, -size/2, handleSize, handleSize); // Top-right
   ellipse(-size/2, size/2, handleSize, handleSize); // Bottom-left
   ellipse(size/2, size/2, handleSize, handleSize); // Bottom-right
+  fill(0, 255, 0);
   ellipse(0, -size/2, handleSize, handleSize); // Top
   ellipse(0, size/2, handleSize, handleSize); // Bottom
   ellipse(-size/2, 0, handleSize, handleSize); // Left
@@ -490,56 +491,87 @@ void drawHandles(float x, float y, float size, float rotation) {
 
 //Shiv: Active Handle
 int getActiveHandle(PVector mouse, float size) {
-    // Check if mouse is over any corner handle for rotation
-    if (dist(mouse.x, mouse.y, -size/2, -size/2) < handleSize / 2) return 0; // Top-left
-    if (dist(mouse.x, mouse.y, size/2, -size/2) < handleSize / 2) return 1; // Top-right
-    if (dist(mouse.x, mouse.y, -size/2, size/2) < handleSize / 2) return 2; // Bottom-left
-    if (dist(mouse.x, mouse.y, size/2, size/2) < handleSize / 2) return 3; // Bottom-right
+  // Check if mouse is over any corner handle for rotation
+  if (dist(mouse.x, mouse.y, -size/2, -size/2) < handleSize / 2) return 0; // Top-left
+  if (dist(mouse.x, mouse.y, size/2, -size/2) < handleSize / 2) return 1; // Top-right
+  if (dist(mouse.x, mouse.y, -size/2, size/2) < handleSize / 2) return 2; // Bottom-left
+  if (dist(mouse.x, mouse.y, size/2, size/2) < handleSize / 2) return 3; // Bottom-right
 
-    // Check if mouse is over any edge handle for resizing
-    if (dist(mouse.x, mouse.y, 0, -size/2) < handleSize / 2) return 4; // Top
-    if (dist(mouse.x, mouse.y, 0, size/2) < handleSize / 2) return 5; // Bottom
-    if (dist(mouse.x, mouse.y, -size/2, 0) < handleSize / 2) return 6; // Left
-    if (dist(mouse.x, mouse.y, size/2, 0) < handleSize / 2) return 7; // Right
+  // Check if mouse is over any edge handle for resizing
+  if (dist(mouse.x, mouse.y, 0, -size/2) < handleSize / 2) return 4; // Top
+  if (dist(mouse.x, mouse.y, 0, size/2) < handleSize / 2) return 5; // Bottom
+  if (dist(mouse.x, mouse.y, -size/2, 0) < handleSize / 2) return 6; // Left
+  if (dist(mouse.x, mouse.y, size/2, 0) < handleSize / 2) return 7; // Right
 
-    return -1; // No active handle
+  return -1; // No active handle
 }
 
 PVector getTransformedMouse(float mouseX, float mouseY, float x, float y, float rotation) {
-    PVector mouse = new PVector(mouseX, mouseY);
-    PVector center = new PVector(x, y);
-    mouse.sub(center);
-    mouse.rotate(-radians(rotation));
-    return mouse;
+  PVector mouse = new PVector(mouseX, mouseY);
+  PVector center = new PVector(x, y);
+  mouse.sub(center);
+  mouse.rotate(-radians(rotation));
+  return mouse;
 }
 
 void updateCursor(PVector transformedMouse) {
-    int handle = getActiveHandle(transformedMouse, logoZ);
+  int handle = getActiveHandle(transformedMouse, logoZ);
 
-    if (isMouseOverSquare(transformedMouse, logoZ)) {
-        cursor(MOVE);
-    } else if (handle >= 0 && handle < 4) {
-        cursor(HAND); // Rotate cursor (hand cursor as a placeholder)
-    } else if (handle >= 4) {
-        cursor(CROSS); // Resize cursor
-    } else {
-        cursor(ARROW);
-    }
+  if (isMouseOverSquare(transformedMouse, logoZ)) {
+    cursor(MOVE);
+  } else if (handle >= 0 && handle < 4) {
+    cursor(HAND); // Rotate cursor (hand cursor as a placeholder)
+  } else if (handle >= 4) {
+    cursor(CROSS); // Resize cursor
+  } else {
+    cursor(ARROW);
+  }
 }
-  
+
 boolean isMouseOverSquare(PVector mouse, float size) {
-    return mouse.x > -size / 2 && mouse.x < size / 2 && mouse.y > -size / 2 && mouse.y < size / 2;
+  return mouse.x > -size / 2 && mouse.x < size / 2 && mouse.y > -size / 2 && mouse.y < size / 2;
 }
 
 void displayMatchStatus() {
-    boolean isSuccess = checkForSuccess();
-    String statusText = isSuccess ? "True" : "False";
-    if (isSuccess) {
-        fill(0, 255, 0); // Green text for "True"
-    } else {
-        fill(255, 0, 0); // Red text for "False"
-    }
-    textAlign(RIGHT, TOP);
-    textSize(20);
-    text("Match: " + statusText, width - 10, 10); // Display in the top right corner
+  boolean isSuccess = checkForSuccess();
+  String statusText = isSuccess ? "True" : "False";
+  if (isSuccess) {
+    fill(0, 255, 0); // Green text for "True"
+  } else {
+    fill(255, 0, 0); // Red text for "False"
+  }
+  textAlign(RIGHT, TOP);
+  textSize(20);
+  text("Match: " + statusText, width - 10, 10); // Display in the top right corner
+}
+void drawLegend() {
+  int padding = 10; // Padding inside the legend box
+  int circleRadius = 10; // Radius of the legend circles
+  int circleDiameter = circleRadius * 2;
+  int boxWidth = 150; // Width of the legend box
+  int boxHeight = 50; // Height of the legend box
+
+  // Draw the legend box background
+  fill(40); // Black background for the legend
+  rect(padding, padding, boxWidth, boxHeight);
+
+  // Calculate positions for the legend items
+  int firstLineY = padding + boxHeight / 4;
+  int secondLineY = padding + 3 * boxHeight / 4;
+  int circleX = padding + circleRadius + 5; // Slightly offset from the left edge
+  int textX = circleX + circleDiameter; // Text starts after the circle
+
+  // Yellow circle for rotation
+  fill(255, 255, 0); // Yellow color
+  ellipse(circleX, firstLineY, circleDiameter, circleDiameter);
+  textAlign(LEFT, CENTER);
+  fill(255); // White text
+  text("Rotate", textX, firstLineY);
+
+  // Green circle for resize
+  fill(0, 255, 0); // Green color
+  ellipse(circleX, secondLineY, circleDiameter, circleDiameter);
+  textAlign(LEFT, CENTER);
+  fill(255); // White text
+  text("Resize", textX, secondLineY);
 }
